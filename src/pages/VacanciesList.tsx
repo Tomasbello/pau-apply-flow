@@ -70,8 +70,8 @@ export const VacanciesList = () => {
     const matchesSearch = vacancy.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vacancy.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          vacancy.professor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = !selectedDepartment || vacancy.department === selectedDepartment;
-    const matchesModality = !selectedModality || vacancy.modality === selectedModality;
+    const matchesDepartment = !selectedDepartment || selectedDepartment === "all" || vacancy.department === selectedDepartment;
+    const matchesModality = !selectedModality || selectedModality === "all" || vacancy.modality === selectedModality;
     
     return matchesSearch && matchesDepartment && matchesModality;
   });
@@ -150,7 +150,7 @@ export const VacanciesList = () => {
                   <SelectValue placeholder="Departamento" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los departamentos</SelectItem>
+                  <SelectItem value="all">Todos los departamentos</SelectItem>
                   <SelectItem value="Matemáticas">Matemáticas</SelectItem>
                   <SelectItem value="Informática">Informática</SelectItem>
                   <SelectItem value="Física">Física</SelectItem>
@@ -163,7 +163,7 @@ export const VacanciesList = () => {
                   <SelectValue placeholder="Modalidad" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las modalidades</SelectItem>
+                  <SelectItem value="all">Todas las modalidades</SelectItem>
                   <SelectItem value="presencial">Presencial</SelectItem>
                   <SelectItem value="virtual">Virtual</SelectItem>
                   <SelectItem value="híbrida">Híbrida</SelectItem>
