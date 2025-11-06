@@ -61,7 +61,7 @@ El usuario consulta rápidamente el estado de su postulación mediante una vista
 
 ```bash
 # Clonar el repositorio
-git clone <YOUR_GIT_URL>
+git clone https://github.com/Tomasbello/pau-apply-flow
 
 # Navegar al directorio del proyecto
 cd pau-apply-flow
