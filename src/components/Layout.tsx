@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { User, Bell, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,20 +9,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useUser } from "@/context/UserContext";
+import { toast } from "sonner";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export const Layout = ({ children }: LayoutProps) => {
+  const navigate = useNavigate();
+  const { user } = useUser();
+
+  const handleNotifications = () => {
+    toast.info("Próximamente", {
+      description: "Sistema de notificaciones en desarrollo"
+    });
+  };
+
+  const handleLogout = () => {
+    toast.success("Sesión cerrada", {
+      description: "Has cerrado sesión exitosamente"
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border h-header shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-full">
-            {/* Logo */}
-            <div className="flex items-center space-x-4">
+            {/* Logo - Clickeable */}
+            <div 
+              className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity" 
+              onClick={() => navigate("/")}
+            >
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">P</span>
               </div>
@@ -33,20 +54,29 @@ export const Layout = ({ children }: LayoutProps) => {
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="/" className="text-foreground hover:text-primary font-medium transition-colors">
+              <button 
+                onClick={() => navigate("/")} 
+                className="text-foreground hover:text-primary font-medium transition-colors"
+              >
                 Vacantes
-              </a>
-              <a href="/mis-postulaciones" className="text-muted-foreground hover:text-primary font-medium transition-colors">
+              </button>
+              <button 
+                onClick={() => navigate("/seguimiento")} 
+                className="text-muted-foreground hover:text-primary font-medium transition-colors"
+              >
                 Mis Postulaciones
-              </a>
-              <a href="/perfil" className="text-muted-foreground hover:text-primary font-medium transition-colors">
+              </button>
+              <button 
+                onClick={() => navigate("/perfil")} 
+                className="text-muted-foreground hover:text-primary font-medium transition-colors"
+              >
                 Mi Perfil
-              </a>
+              </button>
             </nav>
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="w-4 h-4" />
               </Button>
               
@@ -54,20 +84,20 @@ export const Layout = ({ children }: LayoutProps) => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">Juan Pérez</span>
+                    <span className="hidden sm:inline">{user.firstName} {user.lastName}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/perfil")}>
                     <User className="w-4 h-4 mr-2" />
                     Mi Perfil
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleNotifications}>
                     <Bell className="w-4 h-4 mr-2" />
                     Notificaciones
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">
+                  <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Cerrar Sesión
                   </DropdownMenuItem>

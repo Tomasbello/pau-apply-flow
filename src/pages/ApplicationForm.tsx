@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload, FileText, User, Mail, Phone, GraduationCap, CheckCircle, AlertCircle } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ProgressSteps } from "@/components/ProgressSteps";
@@ -10,21 +11,34 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { getVacancyById } from "@/data/vacancies";
+import { careers, semesters, createDefaultTimeline } from "@/data/mockData";
+import { useApplications } from "@/context/ApplicationContext";
+import { useUser } from "@/context/UserContext";
+import { Application } from "@/data/types";
+import NotFound from "./NotFound";
+import { toast } from "sonner";
 
 export const ApplicationForm = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { addApplication, hasAppliedToVacancy } = useApplications();
+  const { user } = useUser();
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Pre-fill form with user profile data
   const [formData, setFormData] = useState({
-    // Personal Info
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    studentId: "",
-    career: "",
-    semester: "",
+    // Personal Info - Pre-filled from user profile
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    phone: user.phone,
+    studentId: user.studentId,
+    career: user.career,
+    semester: user.semester,
     
     // Academic Info
-    gpa: "",
+    gpa: user.gpa,
     subjectGrade: "",
     previousExperience: "",
     motivation: "",
@@ -35,6 +49,17 @@ export const ApplicationForm = () => {
     motivationLetter: false,
     additionalDocs: false
   });
+
+  // Buscar la vacante por ID
+  const vacancy = id ? getVacancyById(id) : undefined;
+
+  // Si no se encuentra la vacante, mostrar 404
+  if (!vacancy) {
+    return <NotFound />;
+  }
+
+  // Verificar si ya postuló a esta vacante
+  const alreadyApplied = hasAppliedToVacancy(vacancy.id);
 
   const steps = [
     {
@@ -76,9 +101,38 @@ export const ApplicationForm = () => {
   };
 
   const handleSubmit = () => {
-    // Simular envío
-    alert("Postulación enviada exitosamente!");
-    window.location.href = "/seguimiento";
+    const submittedDate = new Date().toISOString().split('T')[0];
+    
+    // Crear la aplicación
+    const application: Application = {
+      id: `app-${Date.now()}`,
+      vacancyId: vacancy.id,
+      vacancy: {
+        subject: vacancy.subject,
+        code: vacancy.code,
+        professor: vacancy.professor
+      },
+      status: "pending_review",
+      submittedDate: submittedDate,
+      deadline: vacancy.deadline,
+      progress: 25,
+      missingDocuments: formData.motivationLetter ? [] : ["Carta de Motivación"],
+      timeline: createDefaultTimeline(submittedDate),
+      formData: formData
+    };
+
+    // Guardar en el contexto
+    addApplication(application);
+    
+    // Mostrar notificación
+    toast.success("¡Postulación enviada exitosamente!", {
+      description: `Tu postulación a ${vacancy.subject} ha sido registrada.`
+    });
+    
+    // Redirigir al seguimiento
+    setTimeout(() => {
+      navigate("/seguimiento");
+    }, 1000);
   };
 
   const isStepValid = () => {
@@ -182,11 +236,11 @@ export const ApplicationForm = () => {
                       <SelectValue placeholder="Selecciona tu carrera" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ingenieria-civil">Ingeniería Civil</SelectItem>
-                      <SelectItem value="ingenieria-informatica">Ingeniería Informática</SelectItem>
-                      <SelectItem value="matematicas">Matemáticas</SelectItem>
-                      <SelectItem value="fisica">Física</SelectItem>
-                      <SelectItem value="quimica">Química</SelectItem>
+                      {careers.map(career => (
+                        <SelectItem key={career.value} value={career.value}>
+                          {career.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -197,8 +251,10 @@ export const ApplicationForm = () => {
                       <SelectValue placeholder="Selecciona semestre" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({length: 12}, (_, i) => (
-                        <SelectItem key={i} value={`${i + 1}`}>{i + 1}° Semestre</SelectItem>
+                      {semesters.map(semester => (
+                        <SelectItem key={semester.value} value={semester.value}>
+                          {semester.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -220,7 +276,7 @@ export const ApplicationForm = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subjectGrade">Nota en MAT101 *</Label>
+                  <Label htmlFor="subjectGrade">Nota en {vacancy.code} *</Label>
                   <Input
                     id="subjectGrade"
                     placeholder="6.8"
@@ -411,16 +467,33 @@ export const ApplicationForm = () => {
     <Layout>
       <div className="space-y-6">
         {/* Back Button */}
-        <Button variant="ghost" onClick={() => window.history.back()} className="gap-2">
+        <Button variant="ghost" onClick={() => navigate(`/vacante/${vacancy.id}`)} className="gap-2">
           <ArrowLeft className="w-4 h-4" />
           Volver a la vacante
         </Button>
+
+        {/* Alerta si ya postuló */}
+        {alreadyApplied && (
+          <Alert className="border-warning bg-warning/10">
+            <AlertTriangle className="w-4 h-4 text-warning" />
+            <AlertDescription>
+              Ya has postulado a esta vacante. Puedes ver el estado de tu postulación en{" "}
+              <span 
+                className="underline cursor-pointer font-semibold"
+                onClick={() => navigate("/seguimiento")}
+              >
+                Seguimiento
+              </span>
+              .
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Header */}
         <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
           <h1 className="text-3xl font-bold mb-2">Postulación a Ayudantía</h1>
           <p className="text-primary-foreground/90">
-            Cálculo Diferencial e Integral (MAT101) • Prof. María González
+            {vacancy.subject} ({vacancy.code}) • Prof. {vacancy.professor}
           </p>
         </div>
 
@@ -451,10 +524,11 @@ export const ApplicationForm = () => {
           ) : (
             <Button 
               onClick={handleSubmit}
+              disabled={alreadyApplied}
               className="bg-gradient-success hover:bg-success"
             >
               <CheckCircle className="w-4 h-4 mr-2" />
-              Enviar Postulación
+              {alreadyApplied ? "Ya Postulaste" : "Enviar Postulación"}
             </Button>
           )}
         </div>

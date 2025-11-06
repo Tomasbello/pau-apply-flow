@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Filter, SlidersHorizontal, BookOpen, Users, Clock } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { VacancyCard } from "@/components/VacancyCard";
@@ -8,73 +9,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import heroImage from "@/assets/pau-hero.jpg";
-
-// Mock data
-const mockVacancies = [
-  {
-    id: "1",
-    subject: "Cálculo Diferencial e Integral",
-    code: "MAT101",
-    professor: "María González",
-    department: "Matemáticas",
-    positions: 3,
-    deadline: "15 Oct 2024",
-    modality: "presencial" as const,
-    requirements: ["Nota mínima 6.0", "Conocimiento en LaTeX", "Disponibilidad tarde"]
-  },
-  {
-    id: "2",
-    subject: "Programación Orientada a Objetos",
-    code: "INFO263",
-    professor: "Carlos Rodríguez",
-    department: "Informática",
-    positions: 2,
-    deadline: "20 Oct 2024",
-    modality: "híbrida" as const,
-    requirements: ["Java avanzado", "Nota mínima 6.5", "Experiencia docente"]
-  },
-  {
-    id: "3",
-    subject: "Física General I",
-    code: "FIS100",
-    professor: "Ana López",
-    department: "Física",
-    positions: 4,
-    deadline: "18 Oct 2024",
-    modality: "virtual" as const,
-    requirements: ["Laboratorio", "Nota mínima 6.0", "Matemáticas sólidas"]
-  },
-  {
-    id: "4",
-    subject: "Química Orgánica",
-    code: "QUI200",
-    professor: "Pedro Martínez",
-    department: "Química",
-    positions: 2,
-    deadline: "22 Oct 2024",
-    modality: "presencial" as const,
-    requirements: ["Laboratorio avanzado", "Nota mínima 6.8", "Inglés intermedio"]
-  }
-];
+import { vacancies } from "@/data/vacancies";
+import { departments, modalities } from "@/data/mockData";
+import { toast } from "sonner";
 
 export const VacanciesList = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedModality, setSelectedModality] = useState("");
 
   const handleVacancyClick = (id: string) => {
-    window.location.href = `/vacante/${id}`;
+    navigate(`/vacante/${id}`);
   };
 
-  const filteredVacancies = mockVacancies.filter(vacancy => {
-    const matchesSearch = vacancy.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vacancy.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vacancy.professor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = !selectedDepartment || selectedDepartment === "all" || vacancy.department === selectedDepartment;
-    const matchesModality = !selectedModality || selectedModality === "all" || vacancy.modality === selectedModality;
-    
-    return matchesSearch && matchesDepartment && matchesModality;
-  });
+  // Filtrar vacantes con useMemo para optimizar
+  const filteredVacancies = useMemo(() => {
+    return vacancies.filter(vacancy => {
+      const matchesSearch = vacancy.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           vacancy.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           vacancy.professor.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDepartment = !selectedDepartment || selectedDepartment === "all" || vacancy.department === selectedDepartment;
+      const matchesModality = !selectedModality || selectedModality === "all" || vacancy.modality === selectedModality;
+      
+      return matchesSearch && matchesDepartment && matchesModality;
+    });
+  }, [searchTerm, selectedDepartment, selectedModality]);
+
+  // Calcular estadísticas dinámicamente
+  const totalPositions = useMemo(() => {
+    return filteredVacancies.reduce((acc, v) => acc + v.positions, 0);
+  }, [filteredVacancies]);
 
   return (
     <Layout>
@@ -98,7 +63,7 @@ export const VacanciesList = () => {
             <CardContent className="flex items-center p-6">
               <BookOpen className="w-8 h-8 text-primary mr-4" />
               <div>
-                <p className="text-2xl font-bold text-foreground">{mockVacancies.length}</p>
+                <p className="text-2xl font-bold text-foreground">{vacancies.length}</p>
                 <p className="text-muted-foreground">Vacantes Activas</p>
               </div>
             </CardContent>
@@ -107,9 +72,7 @@ export const VacanciesList = () => {
             <CardContent className="flex items-center p-6">
               <Users className="w-8 h-8 text-success mr-4" />
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {mockVacancies.reduce((acc, v) => acc + v.positions, 0)}
-                </p>
+                <p className="text-2xl font-bold text-foreground">{totalPositions}</p>
                 <p className="text-muted-foreground">Posiciones Disponibles</p>
               </div>
             </CardContent>
@@ -118,8 +81,8 @@ export const VacanciesList = () => {
             <CardContent className="flex items-center p-6">
               <Clock className="w-8 h-8 text-warning mr-4" />
               <div>
-                <p className="text-2xl font-bold text-foreground">5</p>
-                <p className="text-muted-foreground">Días Promedio</p>
+                <p className="text-2xl font-bold text-foreground">{departments.length}</p>
+                <p className="text-muted-foreground">Departamentos</p>
               </div>
             </CardContent>
           </Card>
@@ -151,10 +114,9 @@ export const VacanciesList = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los departamentos</SelectItem>
-                  <SelectItem value="Matemáticas">Matemáticas</SelectItem>
-                  <SelectItem value="Informática">Informática</SelectItem>
-                  <SelectItem value="Física">Física</SelectItem>
-                  <SelectItem value="Química">Química</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
@@ -164,13 +126,21 @@ export const VacanciesList = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas las modalidades</SelectItem>
-                  <SelectItem value="presencial">Presencial</SelectItem>
-                  <SelectItem value="virtual">Virtual</SelectItem>
-                  <SelectItem value="híbrida">Híbrida</SelectItem>
+                  {modalities.map(mod => (
+                    <SelectItem key={mod} value={mod}>
+                      {mod.charAt(0).toUpperCase() + mod.slice(1)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" className="gap-2">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => toast.info("Próximamente", {
+                  description: "Filtros avanzados en desarrollo"
+                })}
+              >
                 <SlidersHorizontal className="w-4 h-4" />
                 Más Filtros
               </Button>

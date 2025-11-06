@@ -1,69 +1,46 @@
 import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Clock, Users, MapPin, BookOpen, FileText, AlertTriangle, CheckCircle } from "lucide-react";
 import { Layout } from "@/components/Layout";
+import { RequirementsChecklist } from "@/components/RequirementsChecklist";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { getVacancyById } from "@/data/vacancies";
+import { calculateDaysLeft, formatDate } from "@/data/mockData";
+import NotFound from "./NotFound";
 
 export const VacancyDetail = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [isApplying, setIsApplying] = useState(false);
 
-  // Mock data - en una app real vendría de la API
-  const vacancy = {
-    id: "1",
-    subject: "Cálculo Diferencial e Integral",
-    code: "MAT101",
-    professor: "María González",
-    department: "Matemáticas",
-    positions: 3,
-    deadline: "15 Octubre 2024",
-    deadlineTime: "23:59 hrs",
-    modality: "presencial" as const,
-    description: "Se buscan ayudantes para apoyar en clases prácticas, resolución de ejercicios y atención de consultas. La asignatura cubre límites, derivadas e integrales con aplicaciones en ingeniería.",
-    requirements: [
-      "Nota mínima 6.0 en la asignatura",
-      "Conocimiento avanzado en LaTeX para preparación de material",
-      "Disponibilidad horaria de tardes (14:00 - 18:00)",
-      "Habilidades de comunicación y trabajo en equipo",
-      "Experiencia previa en tutorías (valorable)"
-    ],
-    responsibilities: [
-      "Preparar y dirigir clases de ejercicios semanales",
-      "Atender consultas de estudiantes en horarios designados",
-      "Corregir tareas y pruebas parciales",
-      "Elaborar material de apoyo (guías, presentaciones)",
-      "Participar en reuniones de coordinación semanales"
-    ],
-    benefits: [
-      "Remuneración mensual de $350.000",
-      "Certificación de experiencia académica",
-      "Acceso a capacitaciones pedagógicas",
-      "Flexibilidad para estudios de pregrado",
-      "Red de contactos académicos"
-    ],
-    schedule: "Lunes, Miércoles y Viernes de 14:00 a 17:00 hrs",
-    duration: "Semestre Primavera 2024 (Agosto - Diciembre)",
-    contact: "maria.gonzalez@universidad.cl"
-  };
+  // Buscar la vacante por ID
+  const vacancy = id ? getVacancyById(id) : undefined;
+
+  // Si no se encuentra la vacante, mostrar 404
+  if (!vacancy) {
+    return <NotFound />;
+  }
 
   const handleApply = () => {
     setIsApplying(true);
-    // Simular navegación al formulario
+    // Navegar al formulario de postulación
     setTimeout(() => {
-      window.location.href = `/postular/${vacancy.id}`;
+      navigate(`/postular/${vacancy.id}`);
     }, 500);
   };
 
-  const daysLeft = 8; // Mock calculation
+  const daysLeft = calculateDaysLeft(vacancy.deadline);
   const isUrgent = daysLeft <= 3;
 
   return (
     <Layout>
       <div className="space-y-6">
         {/* Back Button */}
-        <Button variant="ghost" onClick={() => window.history.back()} className="gap-2">
+        <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
           <ArrowLeft className="w-4 h-4" />
           Volver a vacantes
         </Button>
@@ -97,18 +74,23 @@ export const VacancyDetail = () => {
           <AlertTriangle className={`w-4 h-4 ${isUrgent ? "text-destructive" : "text-warning"}`} />
           <AlertDescription className="flex items-center justify-between">
             <span>
-              <strong>Plazo de postulación:</strong> {vacancy.deadline} a las {vacancy.deadlineTime}
-              {isUrgent && " - ¡Solo quedan " + daysLeft + " días!"}
+              <strong>Plazo de postulación:</strong> {formatDate(vacancy.deadline)} a las {vacancy.deadlineTime}
+              {daysLeft > 0 && isUrgent && ` - ¡Solo quedan ${daysLeft} días!`}
+              {daysLeft > 0 && !isUrgent && ` - Quedan ${daysLeft} días`}
+              {daysLeft === 0 && " - ¡Último día!"}
             </span>
             <Button 
               onClick={handleApply}
-              disabled={isApplying}
+              disabled={isApplying || daysLeft < 0}
               className="bg-gradient-primary hover:bg-primary-dark ml-4"
             >
-              {isApplying ? "Redirigiendo..." : "Postular Ahora"}
+              {isApplying ? "Redirigiendo..." : daysLeft < 0 ? "Cerrado" : "Postular Ahora"}
             </Button>
           </AlertDescription>
         </Alert>
+
+        {/* Requirements Checklist - Meta 1 */}
+        <RequirementsChecklist vacancy={vacancy} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}

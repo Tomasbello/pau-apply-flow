@@ -2,6 +2,7 @@ import { Clock, Users, BookOpen, Calendar, MapPin } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/data/mockData";
 
 interface VacancyCardProps {
   id: string;
@@ -76,7 +77,7 @@ export const VacancyCard = ({
           <div className="flex items-center gap-1 text-sm">
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="text-muted-foreground">Postula hasta:</span>
-            <span className="font-medium text-foreground">{deadline}</span>
+            <span className="font-medium text-foreground">{formatDate(deadline)}</span>
           </div>
 
           {requirements.length > 0 && (
